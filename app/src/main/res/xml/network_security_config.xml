@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- THAY BẰNG IP MÁY TÍNH CỦA BẠN -->
+        <domain includeSubdomains="true">172.16.0.227</domain>
+        <!-- Nếu dùng nhiều IP, thêm tiếp -->
+        <!-- <domain includeSubdomains="true">10.0.2.2</domain> -->
+    </domain-config>
+</network-security-config>

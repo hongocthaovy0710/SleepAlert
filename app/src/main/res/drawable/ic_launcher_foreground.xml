@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.6"
+        android:scaleY="0.6"
+        android:translateX="21.6"
+        android:translateY="21.6">
+        <!-- Moon/Eye icon for sleep alert -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M54,20C36.3,20 22,34.3 22,52s14.3,32 32,32 32,-14.3 32,-32S71.7,20 54,20zM54,80c-15.4,0 -28,-12.6 -28,-28s12.6,-28 28,-28c4.8,0 9.3,1.2 13.3,3.3C60.8,30.5 56,40.5 56,51.5s4.8,21 11.3,24.2C63.3,77.8 58.8,79 54,80z" />
+        <!-- Eye/Alert indicator -->
+        <path
+            android:fillColor="#FFD700"
+            android:pathData="M70,45m-8,0a8,8 0,1 1,16 0a8,8 0,1 1,-16 0" />
+    </group>
+</vector>

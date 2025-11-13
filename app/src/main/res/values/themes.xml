@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base theme cho app, dùng Material Components -->
+    <style name="Theme.SleepAlert" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+        
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/primary_dark</item>
+        
+        <!-- Customize your theme here -->
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+    
+    <!-- Splash theme với full screen -->
+    <style name="Theme.SleepAlert.Splash" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_gradient</item>
+        <item name="android:statusBarColor">@color/primary_dark</item>
+        <item name="android:windowFullscreen">false</item>
+    </style>
+</resources>
