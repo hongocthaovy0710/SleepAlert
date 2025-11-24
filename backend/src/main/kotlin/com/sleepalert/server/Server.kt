@@ -14,7 +14,9 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.SchemaUtils.create
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
-// Bảng users
+// =======================
+// BẢNG USERS (Exposed)
+// =======================
 object Users : Table() {
     val id = integer("id").autoIncrement()
     val username = varchar("username", 50).uniqueIndex()
@@ -23,12 +25,20 @@ object Users : Table() {
     override val primaryKey = PrimaryKey(id)
 }
 
-// DTO
+// =======================
+// DTO REQUEST / RESPONSE
+// =======================
 @Serializable
 data class UserDTO(
     val username: String,
     val password: String,
     val email: String? = null
+)
+
+@Serializable
+data class ApiResponse(
+    val status: String,
+    val message: String
 )
 
 fun main() {
@@ -37,7 +47,7 @@ fun main() {
         url = "jdbc:postgresql://localhost:5432/sleepalertdb",
         driver = "org.postgresql.Driver",
         user = "postgres",
-        password = "root"
+        password = "root"   // nhớ đúng với mật khẩu em đặt trong pgAdmin
     )
 
     // Tạo bảng nếu chưa có
@@ -47,36 +57,48 @@ fun main() {
     }
 
     embeddedServer(Netty, host = "0.0.0.0", port = 8080) {
-        install(ContentNegotiation) { json() }
+        // Bật JSON
+        install(ContentNegotiation) {
+            json()
+        }
 
         routing {
+
             // ========================================
-            // ĐĂNG KÝ - ĐÃ SỬA: BẮT LỖI + LOG RÕ RÀNG
+            // ĐĂNG KÝ
             // ========================================
             post("/register") {
                 println("\n=== Received /register request ===")
+
                 val req = try {
                     call.receive<UserDTO>()
                 } catch (e: Exception) {
-                    println("Invalid JSON: ${e.message}")
-                    call.respond(mapOf("status" to "error", "message" to "Dữ liệu không hợp lệ"))
+                    println("Invalid JSON in /register: ${e.message}")
+                    call.respond(ApiResponse("error", "Dữ liệu không hợp lệ"))
                     return@post
                 }
 
                 println("Username: ${req.username}, Email: ${req.email ?: "null"}")
 
                 // Kiểm tra username tồn tại
-                val exists = transaction {
-                    Users.select { Users.username eq req.username }.count() > 0
+                val exists = try {
+                    transaction {
+                        Users.select { Users.username eq req.username }.count() > 0
+                    }
+                } catch (e: Exception) {
+                    println("DB error when checking exists: ${e.message}")
+                    e.printStackTrace()
+                    call.respond(ApiResponse("error", "Lỗi database khi kiểm tra tài khoản"))
+                    return@post
                 }
 
                 if (exists) {
                     println("User already exists")
-                    call.respond(mapOf("status" to "error", "message" to "Tài khoản đã tồn tại"))
+                    call.respond(ApiResponse("error", "Tài khoản đã tồn tại"))
                     return@post
                 }
 
-                // Thực hiện insert với try-catch
+                // Thực hiện insert
                 try {
                     transaction {
                         Users.insert {
@@ -87,11 +109,11 @@ fun main() {
                         println("INSERT SQL EXECUTED SUCCESSFULLY")
                     }
                     println("User registered successfully in DB")
-                    call.respond(mapOf("status" to "success", "message" to "Đăng ký thành công"))
+                    call.respond(ApiResponse("success", "Đăng ký thành công"))
                 } catch (e: Exception) {
                     println("INSERT FAILED: ${e.message}")
                     e.printStackTrace()
-                    call.respond(mapOf("status" to "error", "message" to "Lỗi hệ thống: ${e.message}"))
+                    call.respond(ApiResponse("error", "Lỗi hệ thống: ${e.message}"))
                 }
             }
 
@@ -102,58 +124,74 @@ fun main() {
                 val req = try {
                     call.receive<UserDTO>()
                 } catch (e: Exception) {
-                    call.respond(mapOf("status" to "error", "message" to "Dữ liệu không hợp lệ"))
+                    println("Invalid JSON in /login: ${e.message}")
+                    call.respond(ApiResponse("error", "Dữ liệu không hợp lệ"))
                     return@post
                 }
 
-                val user = transaction {
-                    Users.select { Users.username eq req.username }.singleOrNull()
+                val user = try {
+                    transaction {
+                        Users.select { Users.username eq req.username }.singleOrNull()
+                    }
+                } catch (e: Exception) {
+                    println("DB error in /login: ${e.message}")
+                    e.printStackTrace()
+                    call.respond(ApiResponse("error", "Lỗi database"))
+                    return@post
                 }
 
                 when {
                     user == null -> {
                         println("Login failed: User not found")
-                        call.respond(mapOf("status" to "error", "message" to "Tên đăng nhập không tồn tại"))
+                        call.respond(ApiResponse("error", "Tên đăng nhập không tồn tại"))
                     }
                     user[Users.password] != req.password -> {
                         println("Login failed: Wrong password")
-                        call.respond(mapOf("status" to "error", "message" to "Sai mật khẩu"))
+                        call.respond(ApiResponse("error", "Sai mật khẩu"))
                     }
                     else -> {
                         println("Login successful: ${req.username}")
-                        call.respond(mapOf("status" to "success", "message" to "Đăng nhập thành công"))
+                        call.respond(ApiResponse("success", "Đăng nhập thành công"))
                     }
                 }
             }
 
             // ========================================
-            // QUÊN MẬT KHẨU - SỬA: KIỂM TRA EMAIL RỖNG
+            // QUÊN MẬT KHẨU
             // ========================================
             post("/forgot-password") {
                 val req = try {
                     call.receive<Map<String, String>>()
                 } catch (e: Exception) {
-                    call.respond(mapOf("status" to "error", "message" to "Dữ liệu không hợp lệ"))
+                    println("Invalid JSON in /forgot-password: ${e.message}")
+                    call.respond(ApiResponse("error", "Dữ liệu không hợp lệ"))
                     return@post
                 }
 
                 val email = req["email"]?.trim() ?: ""
 
                 if (email.isBlank()) {
-                    call.respond(mapOf("status" to "error", "message" to "Vui lòng nhập email"))
+                    call.respond(ApiResponse("error", "Vui lòng nhập email"))
                     return@post
                 }
 
-                val user = transaction {
-                    Users.select { Users.email eq email }.singleOrNull()
+                val user = try {
+                    transaction {
+                        Users.select { Users.email eq email }.singleOrNull()
+                    }
+                } catch (e: Exception) {
+                    println("DB error in /forgot-password: ${e.message}")
+                    e.printStackTrace()
+                    call.respond(ApiResponse("error", "Lỗi database"))
+                    return@post
                 }
 
                 if (user == null) {
                     println("Forgot password: Email not found: $email")
-                    call.respond(mapOf("status" to "error", "message" to "Email không tồn tại"))
+                    call.respond(ApiResponse("error", "Email không tồn tại"))
                 } else {
                     println("Forgot password: Email found: $email")
-                    call.respond(mapOf("status" to "success", "message" to "Liên kết đặt lại mật khẩu đã gửi"))
+                    call.respond(ApiResponse("success", "Liên kết đặt lại mật khẩu đã gửi"))
                 }
             }
         }

@@ -1,3 +1,16 @@
 <resources>
-    <string name="app_name">AI Cảnh Báo Buồn Ngủ</string>
+    <string name="app_name">SleepAlert</string>
+    <string name="username">Username</string>
+    <string name="alert_history">Lịch sử cảnh báo</string>
+    <string name="alert_statistics">Thống kê cảnh báo</string>
+    <string name="personal_info">Thông tin cá nhân</string>
+    <string name="upgrade_account">Nâng cấp tài khoản</string>
+    <string name="logout">Đăng xuất</string>
+    <string name="user_avatar">Avatar người dùng</string>
+    <string name="info">Thông tin</string>
+    <string name="history_icon">Icon lịch sử</string>
+    <string name="statistics_icon">Icon thống kê</string>
+    <string name="profile_icon">Icon hồ sơ</string>
+    <string name="upgrade_icon">Icon nâng cấp</string>
+    <string name="navigate">Điều hướng</string>
 </resources>

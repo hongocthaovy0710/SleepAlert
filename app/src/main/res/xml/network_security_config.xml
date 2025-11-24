@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!-- Cho phép HTTP nói chung -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Cho phép HTTP tới IP máy em -->
     <domain-config cleartextTrafficPermitted="true">
-        <!-- THAY BẰNG IP MÁY TÍNH CỦA BẠN -->
-        <domain includeSubdomains="true">172.16.0.227</domain>
-        <!-- Nếu dùng nhiều IP, thêm tiếp -->
-        <!-- <domain includeSubdomains="true">10.0.2.2</domain> -->
+        <domain includeSubdomains="true">192.168.1.5</domain>
     </domain-config>
 </network-security-config>

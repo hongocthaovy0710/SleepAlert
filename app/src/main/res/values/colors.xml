@@ -5,16 +5,21 @@
     <color name="primary_dark">#1565C0</color>
     <color name="primary_light">#42A5F5</color>
     <color name="accent">#FF5722</color>
-    
+
     <!-- Text colors -->
     <color name="text_primary">#212121</color>
     <color name="text_secondary">#757575</color>
     <color name="text_white">#FFFFFF</color>
-    
+
     <!-- Background colors -->
     <color name="background">#FFFFFF</color>
     <color name="background_grey">#F5F5F5</color>
-    
+
+    <!-- Icon colors -->
+    <color name="icon_primary">#42A5F5</color>
+    <color name="icon_secondary">#BDBDBD</color>
+    <color name="icon_dark">#666666</color>
+
     <!-- Default Material colors -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
@@ -23,4 +28,5 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
 </resources>

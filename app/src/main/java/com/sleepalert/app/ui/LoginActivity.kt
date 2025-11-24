@@ -2,15 +2,17 @@ package com.sleepalert.app.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.sleepalert.app.R
 import kotlinx.coroutines.*
+import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import org.json.JSONObject
 
 class LoginActivity : AppCompatActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
@@ -23,15 +25,20 @@ class LoginActivity : AppCompatActivity() {
 
         btnRegister.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
+            // finish() // muốn thì đóng màn login luôn
         }
 
         btnForgot.setOnClickListener {
-            Toast.makeText(this, "Chức năng quên mật khẩu đang được phát triển", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                "Chức năng quên mật khẩu đang được phát triển",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
         btnLogin.setOnClickListener {
-            val user = edtUser.text.toString()
-            val pass = edtPass.text.toString()
+            val user = edtUser.text.toString().trim()
+            val pass = edtPass.text.toString().trim()
 
             if (user.isEmpty() || pass.isEmpty()) {
                 Toast.makeText(this, "Vui lòng nhập đủ thông tin", Toast.LENGTH_SHORT).show()
@@ -43,7 +50,9 @@ class LoginActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@LoginActivity, result.second, Toast.LENGTH_SHORT).show()
                     if (result.first) {
-                        startActivity(Intent(this@LoginActivity, HomeActivity::class.java))
+                        val intent = Intent(this@LoginActivity, HomeActivity::class.java)
+                        intent.putExtra("USERNAME", user)   // truyền tên đăng nhập
+                        startActivity(intent)
                         finish()
                     }
                 }
@@ -52,19 +61,45 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun postLogin(username: String, password: String): Pair<Boolean, String> {
-        val url = URL("http://172.16.0.227:8080/login")
-        val conn = url.openConnection() as HttpURLConnection
-        conn.requestMethod = "POST"
-        conn.setRequestProperty("Content-Type", "application/json")
-        conn.doOutput = true
+        return try {
+            Log.d("LoginActivity", "Sending login request...")
+            val url = URL("http://192.168.1.5:8080/login")   // 🔥 ĐÃ ĐỔI IP ĐÚNG
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.doOutput = true
+            conn.connectTimeout = 10_000
+            conn.readTimeout = 10_000
 
-        val json = JSONObject()
-        json.put("username", username)
-        json.put("password", password)
+            val json = JSONObject().apply {
+                put("username", username)
+                put("password", password)
+            }
 
-        conn.outputStream.write(json.toString().toByteArray())
-        val response = conn.inputStream.bufferedReader().readText()
-        val data = JSONObject(response)
-        return Pair(data.getString("status") == "success", data.getString("message"))
+            conn.outputStream.use {
+                it.write(json.toString().toByteArray())
+            }
+
+            val code = conn.responseCode
+            Log.d("LoginActivity", "Response code: $code")
+
+            val stream = if (code in 200..299) {
+                conn.inputStream
+            } else {
+                conn.errorStream ?: conn.inputStream
+            }
+
+            val responseText = stream.bufferedReader().readText()
+            Log.d("LoginActivity", "Response: $responseText")
+
+            val data = JSONObject(responseText)
+            val status = data.optString("status")
+            val message = data.optString("message", "Lỗi server ($code)")
+
+            Pair(status == "success", message)
+        } catch (e: Exception) {
+            Log.e("LoginActivity", "Login error: ${e.message}", e)
+            Pair(false, "Lỗi kết nối: ${e.message}")
+        }
     }
 }

@@ -54,7 +54,7 @@ class RegisterActivity : AppCompatActivity() {
     private fun postRegister(username: String, password: String, email: String): Pair<Boolean, String> {
         return try {
             Log.d("RegisterActivity", "Sending request to server...")
-            val url = URL("http://172.16.0.227:8080/register")
+            val url = URL("http://192.168.1.5:8080/register")
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
             conn.setRequestProperty("Content-Type", "application/json")
@@ -62,25 +62,38 @@ class RegisterActivity : AppCompatActivity() {
             conn.connectTimeout = 10000
             conn.readTimeout = 10000
 
-            val json = JSONObject()
-            json.put("username", username)
-            json.put("password", password)
-            json.put("email", email)
+            val json = JSONObject().apply {
+                put("username", username)
+                put("password", password)
+                put("email", email)
+            }
 
             Log.d("RegisterActivity", "Request data: $json")
-            conn.outputStream.write(json.toString().toByteArray())
-            
+            conn.outputStream.use { it.write(json.toString().toByteArray()) }
+
             val responseCode = conn.responseCode
             Log.d("RegisterActivity", "Response code: $responseCode")
-            
-            val response = conn.inputStream.bufferedReader().readText()
-            Log.d("RegisterActivity", "Response: $response")
-            
-            val data = JSONObject(response)
-            Pair(data.getString("status") == "success", data.getString("message"))
+
+            // ⭐ Nếu code 2xx thì đọc inputStream, còn lại đọc errorStream
+            val stream = if (responseCode in 200..299) {
+                conn.inputStream
+            } else {
+                conn.errorStream ?: conn.inputStream
+            }
+
+            val responseText = stream.bufferedReader().readText()
+            Log.d("RegisterActivity", "Response: $responseText")
+
+            return try {
+                val data = JSONObject(responseText)
+                Pair(data.optString("status") == "success", data.optString("message", ""))
+            } catch (e: Exception) {
+                Pair(false, "Lỗi server ($responseCode)")
+            }
         } catch (e: Exception) {
             Log.e("RegisterActivity", "Error: ${e.message}", e)
             Pair(false, "Lỗi kết nối: ${e.message}")
         }
     }
+
 }
