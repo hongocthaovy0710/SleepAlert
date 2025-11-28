@@ -25,7 +25,6 @@ class LoginActivity : AppCompatActivity() {
 
         btnRegister.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
-            // finish() // muốn thì đóng màn login luôn
         }
 
         btnForgot.setOnClickListener {
@@ -50,8 +49,16 @@ class LoginActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@LoginActivity, result.second, Toast.LENGTH_SHORT).show()
                     if (result.first) {
+
+                        // 🔹 LƯU USERNAME ĐỂ MÀN MORE / PROFILE DÙNG
+                        val sharedPref = getSharedPreferences("user_data", MODE_PRIVATE)
+                        sharedPref.edit()
+                            .putString("username", user)
+                            .apply()
+
+                        // Nếu vẫn muốn truyền kèm qua Home thì giữ lại cũng được
                         val intent = Intent(this@LoginActivity, HomeActivity::class.java)
-                        intent.putExtra("USERNAME", user)   // truyền tên đăng nhập
+                        intent.putExtra("USERNAME", user)
                         startActivity(intent)
                         finish()
                     }
@@ -63,7 +70,7 @@ class LoginActivity : AppCompatActivity() {
     private fun postLogin(username: String, password: String): Pair<Boolean, String> {
         return try {
             Log.d("LoginActivity", "Sending login request...")
-            val url = URL("http://192.168.1.5:8080/login")   // 🔥 ĐÃ ĐỔI IP ĐÚNG
+            val url = URL("http://192.168.1.18:8080/login")   // IP server của em
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
             conn.setRequestProperty("Content-Type", "application/json")
