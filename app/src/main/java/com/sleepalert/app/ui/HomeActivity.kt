@@ -75,7 +75,6 @@ class HomeActivity : AppCompatActivity() {
             val outputShape = interpreter.getOutputTensor(0).shape()
             Log.d("MODEL_INFO", "Input shape: ${inputShape.contentToString()}")
             Log.d("MODEL_INFO", "Output shape: ${outputShape.contentToString()}")
-
             analyzer = DrowsinessAnalyzer(this, interpreter, tvStatus)
             tvStatus.text = "✅ Model loaded - Input: ${inputShape[1]}x${inputShape[2]}"
         } catch (e: Exception) {
@@ -234,7 +233,6 @@ class HomeActivity : AppCompatActivity() {
 
                 val output = Array(1) { Array(10) { FloatArray(8400) } }
                 interpreter.run(inputBuffer, output)
-
                 runOnUiThread {
                     tvStatus.text =
                         "🧪 Đã test với ảnh giả khuôn mặt – xem logcat để debug"
@@ -268,7 +266,7 @@ class HomeActivity : AppCompatActivity() {
             if (::interpreter.isInitialized) {
                 interpreter.close()
             }
-            analyzer?.release()   // giải phóng MediaPlayer nếu có
+            analyzer?.release()   // 👈 QUAN TRỌNG: Giải phóng MediaPlayer
         } catch (_: Exception) {
         }
         cameraExecutor.shutdown()

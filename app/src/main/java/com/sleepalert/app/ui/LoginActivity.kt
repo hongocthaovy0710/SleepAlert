@@ -70,7 +70,7 @@ class LoginActivity : AppCompatActivity() {
     private fun postLogin(username: String, password: String): Pair<Boolean, String> {
         return try {
             Log.d("LoginActivity", "Sending login request...")
-            val url = URL("http://192.168.1.18:8080/login")   // IP server của em
+            val url = URL("http://192.168.1.105:8080/login")   // IP server của em
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
             conn.setRequestProperty("Content-Type", "application/json")

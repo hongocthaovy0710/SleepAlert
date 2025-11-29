@@ -58,8 +58,8 @@
             <!-- Camera Preview + Status Overlay -->
             <FrameLayout
                     android:id="@+id/cameraContainer"
-                    android:layout_width="180dp"
-                    android:layout_height="180dp"
+                    android:layout_width="300dp"
+                    android:layout_height="200dp"
                     android:layout_marginTop="24dp">
 
                 <androidx.camera.view.PreviewView

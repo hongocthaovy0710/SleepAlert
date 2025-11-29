@@ -54,7 +54,7 @@ class RegisterActivity : AppCompatActivity() {
     private fun postRegister(username: String, password: String, email: String): Pair<Boolean, String> {
         return try {
             Log.d("RegisterActivity", "Sending request to server...")
-            val url = URL("http://192.168.1.5:8080/register")
+            val url = URL("http://192.168.1.105:8080/register")
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
             conn.setRequestProperty("Content-Type", "application/json")

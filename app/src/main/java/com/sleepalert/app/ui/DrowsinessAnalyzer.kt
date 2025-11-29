@@ -6,9 +6,14 @@ import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.graphics.Rect
 import android.graphics.YuvImage
+import android.media.MediaPlayer
+import android.util.Log
 import android.widget.TextView
+import androidx.annotation.OptIn
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import com.sleepalert.app.R
 import org.tensorflow.lite.Interpreter
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
@@ -27,11 +32,31 @@ class DrowsinessAnalyzer(
 
     private val output = Array(1) { Array(10) { FloatArray(8400) } }
     private var sleepyStartTime: Long = 0 // thời điểm bắt đầu nhắm mắt
-    private val sleepyDuration = 2000L    // 3 giây
+    private val sleepyDuration = 2000L    // 2 giây
+
+    // THÊM ÂM THANH
+    private var mediaPlayer: MediaPlayer? = null
+    private var isSleepyState = false // Theo dõi trạng thái buồn ngủ
 
     private val inputBuffer = ByteBuffer.allocateDirect(
         WIDTH * HEIGHT * PIXEL_SIZE * NUM_BYTES_PER_CHANNEL
     ).apply { order(ByteOrder.nativeOrder()) }
+
+    init {
+        initializeMediaPlayer()
+    }
+
+    // THÊM HÀM KHỞI TẠO ÂM THANH
+    private fun initializeMediaPlayer() {
+        try {
+            // Sử dụng âm thanh từ raw folder
+            mediaPlayer = MediaPlayer.create(context, R.raw.alert_beep)
+            mediaPlayer?.isLooping = true // Lặp lại âm thanh
+            Log.d("Audio", "✅ Đã load file âm thanh")
+        } catch (e: Exception) {
+            Log.e("Audio", "❌ Lỗi load âm thanh: ${e.message}")
+        }
+    }
 
     override fun analyze(imageProxy: ImageProxy) {
         try {
@@ -39,8 +64,6 @@ class DrowsinessAnalyzer(
             val resizedBitmap = Bitmap.createScaledBitmap(bitmap, WIDTH, HEIGHT, true)
             convertBitmapToByteBuffer(resizedBitmap)
             interpreter.run(inputBuffer, output)
-
-
 
             for (i in 0 until 10) {
                 val arr = output[0][i]
@@ -51,10 +74,13 @@ class DrowsinessAnalyzer(
 
             val currentTime = System.currentTimeMillis()
 
-            // Quyết định cuối cùng dựa trên kết quả giải mã (đã dùng tổng điểm và ngưỡng cao)
-            val isSleepy = predClass == 0
+            // Quyết định cuối cùng dựa trên kết quả giải mã
+            val isCurrentlySleepy = predClass == 0
 
-            if (isSleepy) {
+            // ĐIỀU KHIỂN ÂM THANH THEO TRẠNG THÁI
+            controlAlertSound(isCurrentlySleepy)
+
+            if (isCurrentlySleepy) {
                 if (sleepyStartTime == 0L) {
                     sleepyStartTime = currentTime
                 }
@@ -83,6 +109,49 @@ class DrowsinessAnalyzer(
             tvStatus.post { tvStatus.text = "❌ Lỗi: ${e.message}" }
         } finally {
             imageProxy.close()
+        }
+    }
+
+    // HÀM MỚI: Điều khiển âm thanh theo trạng thái
+    private fun controlAlertSound(isCurrentlySleepy: Boolean) {
+        if (isCurrentlySleepy && !isSleepyState) {
+            // Chuyển từ tỉnh táo sang buồn ngủ: BẬT âm thanh
+            startAlertSound()
+            isSleepyState = true
+            Log.d("Alert", "🔊 BẬT âm thanh - Bắt đầu buồn ngủ")
+        } else if (!isCurrentlySleepy && isSleepyState) {
+            // Chuyển từ buồn ngủ sang tỉnh táo: TẮT âm thanh
+            stopAlertSound()
+            isSleepyState = false
+            Log.d("Alert", "🔇 TẮT âm thanh - Đã tỉnh táo")
+        }
+        // Nếu trạng thái không đổi thì không làm gì
+    }
+
+    private fun startAlertSound() {
+        try {
+            mediaPlayer?.let { player ->
+                if (!player.isPlaying) {
+                    player.start()
+                    Log.d("Alert", "🎵 Âm thanh bắt đầu phát")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Alert", "❌ Lỗi phát âm thanh: ${e.message}")
+        }
+    }
+
+    private fun stopAlertSound() {
+        try {
+            mediaPlayer?.let { player ->
+                if (player.isPlaying) {
+                    player.pause()
+                    player.seekTo(0) // Reset về đầu
+                    Log.d("Alert", "🔇 Âm thanh đã dừng")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Alert", "❌ Lỗi dừng âm thanh: ${e.message}")
         }
     }
 
@@ -136,6 +205,17 @@ class DrowsinessAnalyzer(
         return Pair(1, maxScore) // Class 1 (Tỉnh táo)
     }
 
+    // THÊM HÀM DỌN DẸP
+    fun release() {
+        try {
+            mediaPlayer?.release()
+            mediaPlayer = null
+            Log.d("Audio", "🔇 Đã giải phóng MediaPlayer")
+        } catch (e: Exception) {
+            Log.e("Audio", "❌ Lỗi giải phóng MediaPlayer: ${e.message}")
+        }
+    }
+
     companion object {
         // Giữ nguyên hàm này cho mục đích testModel()
         fun decodeYoloOutputStatic(yoloOutput: Array<Array<FloatArray>>): Pair<Int, Float> {
@@ -166,7 +246,7 @@ class DrowsinessAnalyzer(
     }
 }
 
-
+@OptIn(ExperimentalGetImage::class)
 fun ImageProxy.toRgbBitmap(): Bitmap? {
     val image = this.image ?: return null
 
